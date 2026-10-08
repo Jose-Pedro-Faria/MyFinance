@@ -6,6 +6,7 @@ class SubCategoria(models.Model):
         RECEITA = "REC", "Receita"
         ESSENCIAL = "ESS", "Despesas Essenciais"
         NAO_ESSENCIAL = "NES", "Despesas Não Essenciais"
+        INVESTIMENTO = "INV", "Investimento"
 
     nome = models.CharField(max_length=100)
     tipo = models.CharField(max_length=3, choices=Tipo.choices)

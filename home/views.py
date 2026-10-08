@@ -50,7 +50,7 @@ def home(request):
     variacao = ultimo["total"] - anterior["total"] if ultimo and anterior else None
 
     # ---------- Relatórios mensais ----------
-    rel = defaultdict(lambda: {"REC": ZERO, "ESS": ZERO, "NES": ZERO})
+    rel = defaultdict(lambda: {"REC": ZERO, "ESS": ZERO, "NES": ZERO, "INV": ZERO})
     linhas = (
         Lancamento.objects.values("relatorio__mes", "subcategoria__tipo")
         .annotate(t=Sum("montante"))
@@ -62,8 +62,8 @@ def home(request):
     for mes in sorted(rel):
         g = rel[mes]
         serie_rel.append({
-            "mes": mes, "rec": g["REC"], "ess": g["ESS"], "nes": g["NES"],
-            "sobra": g["REC"] - g["ESS"] - g["NES"],
+            "mes": mes, "rec": g["REC"], "ess": g["ESS"], "nes": g["NES"], "inv": g["INV"],
+            "sobra": g["REC"] - g["ESS"] - g["NES"] - g["INV"],
         })
     ultimo_rel = serie_rel[-1] if serie_rel else None
 
@@ -71,24 +71,28 @@ def home(request):
     media_rec = _media(sum((s["rec"] for s in serie_rel), ZERO), n)
     media_ess = _media(sum((s["ess"] for s in serie_rel), ZERO), n)
     media_nes = _media(sum((s["nes"] for s in serie_rel), ZERO), n)
-    media_desp = _media(sum((s["ess"] + s["nes"] for s in serie_rel), ZERO), n)
+    media_inv = _media(sum((s["inv"] for s in serie_rel), ZERO), n)
+    media_desp = _media(sum((s["ess"] + s["nes"] + s["inv"] for s in serie_rel), ZERO), n)
     media_sobra = _media(sum((s["sobra"] for s in serie_rel), ZERO), n)
+    total_investido = sum((s["inv"] for s in serie_rel), ZERO)
 
     # Totais por ano e médias anuais
-    por_ano = defaultdict(lambda: {"rec": ZERO, "desp": ZERO, "meses": 0})
+    por_ano = defaultdict(lambda: {"rec": ZERO, "desp": ZERO, "inv": ZERO, "meses": 0})
     for s in serie_rel:
         a = por_ano[s["mes"].year]
         a["rec"] += s["rec"]
-        a["desp"] += s["ess"] + s["nes"]
+        a["desp"] += s["ess"] + s["nes"] + s["inv"]
+        a["inv"] += s["inv"]
         a["meses"] += 1
     tabela_anos = [
         {"ano": ano, "meses": a["meses"], "rec": a["rec"], "desp": a["desp"],
-         "sobra": a["rec"] - a["desp"]}
+         "inv": a["inv"], "sobra": a["rec"] - a["desp"]}
         for ano, a in sorted(por_ano.items())
     ]
     na = len(tabela_anos)
     media_anual_rec = _media(sum((a["rec"] for a in tabela_anos), ZERO), na)
     media_anual_desp = _media(sum((a["desp"] for a in tabela_anos), ZERO), na)
+    media_anual_inv = _media(sum((a["inv"] for a in tabela_anos), ZERO), na)
     media_anual_sobra = _media(sum((a["sobra"] for a in tabela_anos), ZERO), na)
 
     # ---------- Investimentos (valores atuais) ----------
@@ -107,6 +111,10 @@ def home(request):
         c["pct_inv"] = c["total"] / inv_total * 100 if inv_total else None
         c["pct_pat"] = c["total"] / base_patrimonio * 100 if base_patrimonio else None
     inv_pct_pat_total = inv_total / base_patrimonio * 100 if base_patrimonio else None
+
+    # Total investido (relatórios) vs valor atual dos investimentos
+    mais_valia = inv_total - total_investido
+    mais_valia_pct = mais_valia / total_investido * 100 if total_investido else None
 
     # ---------- Dívidas ----------
     ativas = [d for d in Divida.objects.all() if d.meses_em_falta > 0]
@@ -129,8 +137,9 @@ def home(request):
         pendentes_total / media_sobra if media_sobra and media_sobra > 0 else None
     )
 
-    # Sobra do mês vs variação do património (só meses consecutivos)
-    sobra_por_mes = {s["mes"]: s["sobra"] for s in serie_rel}
+    # Sobra antes de investir vs variação do património (só meses consecutivos).
+    # O dinheiro investido continua a ser património, por isso soma-se de volta.
+    sobra_por_mes = {s["mes"]: s["sobra"] + s["inv"] for s in serie_rel}
     comparacao = []
     for i in range(1, len(serie_pat)):
         atual, ant = serie_pat[i], serie_pat[i - 1]
@@ -161,11 +170,16 @@ def home(request):
             "rec": [_f(s["rec"]) for s in serie_rel],
             "ess": [_f(s["ess"]) for s in serie_rel],
             "nes": [_f(s["nes"]) for s in serie_rel],
+            "inv": [_f(s["inv"]) for s in serie_rel],
             "sobra": [_f(s["sobra"]) for s in serie_rel],
         },
         "investimentos": {
             "nomes": [c["nome"] for c in inv_por_cat],
             "valores": [_f(c["total"]) for c in inv_por_cat],
+        },
+        "valorizacao": {
+            "investido": _f(total_investido),
+            "valor": _f(inv_total),
         },
     }
 
@@ -173,11 +187,15 @@ def home(request):
         "ultimo": ultimo, "anterior": anterior, "variacao": variacao,
         "ultimo_rel": ultimo_rel,
         "media_rec": media_rec, "media_ess": media_ess, "media_nes": media_nes,
-        "media_desp": media_desp, "media_sobra": media_sobra,
+        "media_inv": media_inv, "media_desp": media_desp, "media_sobra": media_sobra,
         "tabela_anos": tabela_anos,
         "media_anual_rec": media_anual_rec, "media_anual_desp": media_anual_desp,
-        "media_anual_sobra": media_anual_sobra,
+        "media_anual_inv": media_anual_inv, "media_anual_sobra": media_anual_sobra,
         "inv_total": inv_total,
+        "inv_por_cat": inv_por_cat, "base_patrimonio": base_patrimonio,
+        "inv_pct_pat_total": inv_pct_pat_total,
+        "total_investido": total_investido,
+        "mais_valia": mais_valia, "mais_valia_pct": mais_valia_pct,
         "mensalidade_total": mensalidade_total, "divida_total": divida_total,
         "pendentes": pendentes, "pendentes_total": pendentes_total,
         "patrimonio_liquido": patrimonio_liquido, "taxa_esforco": taxa_esforco,
@@ -185,7 +203,4 @@ def home(request):
         "cobertura_pendentes": cobertura_pendentes,
         "comparacao": comparacao,
         "dados": dados,
-        "inv_por_cat": inv_por_cat,
-        "base_patrimonio": base_patrimonio,
-        "inv_pct_pat_total": inv_pct_pat_total,
     })

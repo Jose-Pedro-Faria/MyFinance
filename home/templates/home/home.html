@@ -103,6 +103,22 @@
     <div class="grafico-corpo"><canvas id="g_fluxo"></canvas></div>
   </div>
 
+  <div id="cartao_valorizacao">
+    <div class="grafico-topo">
+      <h3>Investido vs valor atual</h3>
+      <button type="button" class="maximizar" data-alvo="cartao_valorizacao">Maximizar</button>
+    </div>
+    <div class="grafico-corpo"><canvas id="g_valorizacao"></canvas></div>
+    <p class="nota-grafico">
+      Diferença:
+      <strong class="{% if mais_valia < 0 %}neg{% endif %}">
+        {% if mais_valia >= 0 %}+{% endif %}{{ mais_valia|floatformat:2 }} €{% if mais_valia_pct is not None %}
+        ({% if mais_valia >= 0 %}+{% endif %}{{ mais_valia_pct|floatformat:1 }} %){% endif %}
+      </strong>
+      · Investido: {{ total_investido|floatformat:2 }} € · Valor atual: {{ inv_total|floatformat:2 }} €
+    </p>
+  </div>
+
   <div id="cartao_investimentos" class="grafico-duplo">
     <div class="grafico-topo">
       <h3>Investimentos atuais por categoria</h3>
@@ -152,7 +168,7 @@
     <td>{% if media_anual_rec is not None %}{{ media_anual_rec|floatformat:2 }} €{% else %}—{% endif %}</td>
   </tr>
   <tr>
-    <td>Despesas (total)</td>
+    <td>Despesas (total, inclui investimento)</td>
     <td>{% if media_desp is not None %}{{ media_desp|floatformat:2 }} €{% else %}—{% endif %}</td>
     <td>{% if media_anual_desp is not None %}{{ media_anual_desp|floatformat:2 }} €{% else %}—{% endif %}</td>
   </tr>
@@ -167,6 +183,11 @@
     <td></td>
   </tr>
   <tr>
+    <td>&nbsp;&nbsp;Investido</td>
+    <td>{% if media_inv is not None %}{{ media_inv|floatformat:2 }} €{% else %}—{% endif %}</td>
+    <td>{% if media_anual_inv is not None %}{{ media_anual_inv|floatformat:2 }} €{% else %}—{% endif %}</td>
+  </tr>
+  <tr>
     <td><strong>Sobra</strong></td>
     <td>{% if media_sobra is not None %}<strong>{{ media_sobra|floatformat:2 }} €</strong>{% else %}—{% endif %}</td>
     <td>{% if media_anual_sobra is not None %}<strong>{{ media_anual_sobra|floatformat:2 }} €</strong>{% else %}—{% endif %}</td>
@@ -175,17 +196,21 @@
 
 <h2>Totais por ano</h2>
 <table>
-  <tr><th>Ano</th><th>Meses registados</th><th>Receitas</th><th>Despesas</th><th>Sobra</th></tr>
+  <tr>
+    <th>Ano</th><th>Meses registados</th><th>Receitas</th>
+    <th>Despesas (inclui investido)</th><th>Investido</th><th>Sobra</th>
+  </tr>
   {% for a in tabela_anos %}
   <tr>
     <td>{{ a.ano }}</td>
     <td>{{ a.meses }}</td>
     <td>{{ a.rec|floatformat:2 }} €</td>
     <td>{{ a.desp|floatformat:2 }} €</td>
+    <td>{{ a.inv|floatformat:2 }} €</td>
     <td class="{% if a.sobra < 0 %}neg{% endif %}">{{ a.sobra|floatformat:2 }} €</td>
   </tr>
   {% empty %}
-  <tr><td colspan="5">Ainda não há relatórios mensais.</td></tr>
+  <tr><td colspan="6">Ainda não há relatórios mensais.</td></tr>
   {% endfor %}
 </table>
 
@@ -200,10 +225,11 @@
 </table>
 
 <h2>Sobra do mês vs variação do património</h2>
-<p><small>Só aparecem meses com registo de património no mês anterior. A diferença inclui, por exemplo,
+<p><small>Só aparecem meses com registo de património no mês anterior. A sobra aqui é antes de investir,
+porque o dinheiro investido continua a contar como património. A diferença inclui, por exemplo,
 a valorização dos investimentos e movimentos que não estejam nos relatórios.</small></p>
 <table>
-  <tr><th>Mês</th><th>Sobra (relatório)</th><th>Variação do património</th><th>Diferença</th></tr>
+  <tr><th>Mês</th><th>Sobra + investido (relatório)</th><th>Variação do património</th><th>Diferença</th></tr>
   {% for c in comparacao %}
   <tr>
     <td>{{ c.mes|date:"m/Y" }}</td>
@@ -284,6 +310,7 @@ a valorização dos investimentos e movimentos que não estejam nos relatórios.
         barra("Receita", D.fluxo.rec, COR.verde),
         barra("Despesas essenciais", D.fluxo.ess, COR.ambar),
         barra("Despesas não essenciais", D.fluxo.nes, COR.rosa),
+        barra("Investimento", D.fluxo.inv, COR.roxo),
         linha("Sobra", D.fluxo.sobra, COR.azul, { type: "line", borderWidth: 3 }),
       ],
     },
@@ -309,6 +336,30 @@ a valorização dos investimentos e movimentos que não estejam nos relatórios.
     },
   });
 
+  // ---------- Investido vs valor atual ----------
+  const investido = D.valorizacao.investido;
+  const valorAtual = D.valorizacao.valor;
+  new Chart(document.getElementById("g_valorizacao"), {
+    type: "bar",
+    data: {
+      labels: ["Total investido", "Valor atual"],
+      datasets: [{
+        data: [investido, valorAtual],
+        backgroundColor: [COR.azul, valorAtual >= investido ? COR.verde : COR.rosa],
+        borderRadius: 6,
+        maxBarThickness: 90,
+      }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => euros(c.parsed.y) } },
+      },
+      scales: { y: { beginAtZero: true, ticks: { callback: euros } } },
+    },
+  });
+  
   // ---------- Escolher quais as séries visíveis ----------
   function criarSeries(grafico, idContentor) {
     const contentor = document.getElementById(idContentor);

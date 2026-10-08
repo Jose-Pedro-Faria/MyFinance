@@ -189,3 +189,6 @@ button.maximizar { font-size: 0.8rem; padding: 3px 10px; }
 .graficos > div:fullscreen .duplo-grafico { max-width: none; }
 
 .totais td { font-weight: 700; }
+
+
+.nota-grafico { color: var(--muted); font-size: 0.9rem; margin: 10px 0 0; }

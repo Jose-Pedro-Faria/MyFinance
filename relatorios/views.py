@@ -13,6 +13,7 @@ TIPOS = [
     ("REC", "Receita"),
     ("ESS", "Despesas Essenciais"),
     ("NES", "Despesas Não Essenciais"),
+    ("INV", "Investimento"),
 ]
 
 
@@ -43,7 +44,7 @@ def lista(request):
         linhas.append({
             "mes": r.mes,
             "grupos": celulas,
-            "sobra": totais["REC"] - totais["ESS"] - totais["NES"],
+            "sobra": totais["REC"] - totais["ESS"] - totais["NES"] - totais["INV"],
         })
 
     return render(request, "relatorios/lista.html", {"grupos": grupos, "linhas": linhas})
