@@ -1,0 +1,13 @@
+<p><small>Podes escrever somas em cada campo, por exemplo <code>50+20+100</code>.</small></p>
+
+{% for g in grupos %}
+  <h3>{{ g.nome }}</h3>
+  {% for s in g.categorias %}
+  <div class="campo">
+    <label>{{ s.nome }}</label>
+    <input type="text" name="sub_{{ s.id }}" value="{{ s.valor_atual }}" placeholder="0,00">
+  </div>
+  {% empty %}
+  <p>Ainda não há subcategorias neste tipo.</p>
+  {% endfor %}
+{% endfor %}

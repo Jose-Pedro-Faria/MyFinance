@@ -1,0 +1,37 @@
+<div class="campo">
+  <label>Mês</label>
+  <select name="mes" id="sel_mes">
+    {% for n, nome in meses %}
+    <option value="{{ n }}" {% if n == mes_sel %}selected{% endif %}>{{ nome }}</option>
+    {% endfor %}
+  </select>
+  <select name="ano" id="sel_ano">
+    {% for a in anos %}
+    <option value="{{ a }}" {% if a == ano_sel %}selected{% endif %}>{{ a }}</option>
+    {% endfor %}
+  </select>
+</div>
+<p id="aviso_mes" class="erro" hidden>
+  Já existe um registo para este mês. Vai à tabela e carrega em <strong>Editar</strong>.
+</p>
+
+{{ existentes|json_script:"existentes" }}
+<script>
+  (function () {
+    const existentes = JSON.parse(document.getElementById("existentes").textContent);
+    const mes = document.getElementById("sel_mes");
+    const ano = document.getElementById("sel_ano");
+    const aviso = document.getElementById("aviso_mes");
+    const guardar = document.getElementById("btn_guardar");
+
+    function verificar() {
+      const chave = ano.value + "-" + String(mes.value).padStart(2, "0");
+      const existe = existentes.includes(chave);
+      aviso.hidden = !existe;
+      guardar.disabled = existe;
+    }
+    mes.addEventListener("change", verificar);
+    ano.addEventListener("change", verificar);
+    verificar();
+  })();
+</script>

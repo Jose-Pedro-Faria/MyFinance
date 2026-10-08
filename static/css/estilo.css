@@ -192,3 +192,6 @@ button.maximizar { font-size: 0.8rem; padding: 3px 10px; }
 
 
 .nota-grafico { color: var(--muted); font-size: 0.9rem; margin: 10px 0 0; }
+
+form.inline { display: inline; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }

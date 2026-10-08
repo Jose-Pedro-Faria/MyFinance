@@ -1,0 +1,12 @@
+<p><small>Podes escrever somas em cada campo, por exemplo <code>1200+350</code>.</small></p>
+
+{% regroup categorias by get_grupo_display as grupos %}
+{% for g in grupos %}
+  <h3>{{ g.grouper }}</h3>
+  {% for c in g.list %}
+  <div class="campo">
+    <label>{{ c.nome }}</label>
+    <input type="text" name="cat_{{ c.id }}" value="{{ c.valor_atual }}" placeholder="0,00">
+  </div>
+  {% endfor %}
+{% endfor %}

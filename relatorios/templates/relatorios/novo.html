@@ -1,32 +1,16 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Relatório mensal</h1>
+<h1>Novo relatório mensal</h1>
 {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
 
 <form method="post">
   {% csrf_token %}
-  <div class="campo">
-    <label>Mês</label>
-    <input type="month" name="mes" value="{{ mes_txt }}" required
-           onchange="window.location='?mes=' + this.value">
-  </div>
-  <p><small>Podes escrever somas em cada campo, por exemplo <code>50+20+100</code>.
-  Ao mudar o mês, carregam-se os valores desse mês.</small></p>
-
-  {% for g in grupos %}
-    <h3>{{ g.nome }}</h3>
-    {% for s in g.categorias %}
-    <div class="campo">
-      <label>{{ s.nome }}</label>
-      <input type="text" name="sub_{{ s.id }}" value="{{ s.valor_atual }}" placeholder="0,00">
-    </div>
-    {% empty %}
-    <p>Ainda não há subcategorias neste tipo.</p>
-    {% endfor %}
-  {% endfor %}
-
-  <p><button type="submit">Guardar</button>
-  <a href="{% url 'relatorios:lista' %}">Cancelar</a></p>
+  {% include "seletor_mes.html" %}
+  {% include "relatorios/_campos.html" %}
+  <p>
+    <button type="submit" id="btn_guardar">Guardar</button>
+    <a href="{% url 'relatorios:lista' %}">Cancelar</a>
+  </p>
 </form>
 <p><a href="{% url 'relatorios:nova_subcategoria' %}">+ Criar nova subcategoria</a></p>
 {% endblock %}

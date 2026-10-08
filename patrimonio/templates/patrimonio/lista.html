@@ -30,6 +30,7 @@
     {% endfor %}
     <th>Total</th>
     <th>Total sem Emergência</th>
+    <th></th>
   </tr>
 
   {% for l in linhas %}
@@ -43,6 +44,14 @@
     {% endfor %}
     <td><strong>{{ l.total|floatformat:2 }} €</strong></td>
     <td><strong>{{ l.sem_emergencia|floatformat:2 }} €</strong></td>
+    <td>
+      <a href="{% url 'patrimonio:editar' l.pk %}">Editar</a>
+      <form class="inline" method="post" action="{% url 'patrimonio:apagar' l.pk %}"
+            onsubmit="return confirm('Apagar o registo de {{ l.mes|date:"m/Y" }}? Esta ação não pode ser desfeita.')">
+        {% csrf_token %}
+        <button type="submit">Apagar</button>
+      </form>
+    </td>
   </tr>
   {% empty %}
   <tr><td colspan="20">Ainda não há registos.</td></tr>

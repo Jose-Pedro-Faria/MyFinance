@@ -2,13 +2,14 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from config.calculos import calcular
+from config.datas import MESES, anos_disponiveis, ler_mes
 
 from .forms import CategoriaForm
 from .models import Categoria, RegistoMensal, Valor
-
-from config.calculos import calcular
-
 
 GRUPOS = [("DIN", "Dinheiro"), ("EME", "Emergência"), ("INV", "Investimentos")]
 
@@ -38,6 +39,7 @@ def lista(request):
             if g["cod"] == "EME":
                 emergencia = soma
         linhas.append({
+            "pk": r.pk,
             "mes": r.mes,
             "grupos": celulas,
             "total": total,
@@ -47,41 +49,61 @@ def lista(request):
     return render(request, "patrimonio/lista.html", {"grupos": grupos, "linhas": linhas})
 
 
+# ---------- Funções de apoio ao formulário ----------
+
+def _ler_digitado(request, categorias):
+    return {c.id: request.POST.get(f"cat_{c.id}", "").strip() for c in categorias}
+
+
+def _calcular_valores(categorias, digitado):
+    try:
+        return {
+            c: (calcular(digitado[c.id]), digitado[c.id])
+            for c in categorias if digitado[c.id]
+        }
+    except (ValueError, SyntaxError, InvalidOperation, ZeroDivisionError):
+        raise ValueError("Há um valor inválido. Usa números e as operações + - * / (ex.: 1200+350).")
+
+
+def _guardar_valores(registo, categorias, valores, digitado):
+    for c, (montante, expressao) in valores.items():
+        Valor.objects.update_or_create(
+            registo=registo, categoria=c,
+            defaults={"montante": montante, "expressao": expressao},
+        )
+    vazias = [c for c in categorias if not digitado[c.id]]
+    Valor.objects.filter(registo=registo, categoria__in=vazias).delete()
+
+
+# ---------- Novo / editar / apagar ----------
+
 def novo_registo(request):
     categorias = list(Categoria.objects.filter(ativa=True))
+    existentes = [m.strftime("%Y-%m") for m in RegistoMensal.objects.values_list("mes", flat=True)]
+    hoje = date.today()
+    ano_sel, mes_sel = hoje.year, hoje.month
+    digitado = {}
     erro = None
 
-    mes_txt = request.POST.get("mes") or request.GET.get("mes") or date.today().strftime("%Y-%m")
-    try:
-        ano, mes = mes_txt.split("-")
-        data = date(int(ano), int(mes), 1)
-    except ValueError:
-        data = date.today().replace(day=1)
-        mes_txt = data.strftime("%Y-%m")
-
     if request.method == "POST":
-        digitado = {c.id: request.POST.get(f"cat_{c.id}", "").strip() for c in categorias}
-        try:
-            valores = {
-                c: (calcular(digitado[c.id]), digitado[c.id])
-                for c in categorias if digitado[c.id]
-            }
-        except (ValueError, SyntaxError, InvalidOperation, ZeroDivisionError):
-            erro = "Há um valor inválido. Usa números e as operações + - * / (ex.: 1200+350)."
+        digitado = _ler_digitado(request, categorias)
+        data = ler_mes(request)
+        if data is None:
+            erro = "Escolhe um mês e um ano válidos."
         else:
-            with transaction.atomic():
-                registo, _ = RegistoMensal.objects.get_or_create(mes=data)
-                for c, (montante, expressao) in valores.items():
-                    Valor.objects.update_or_create(
-                        registo=registo, categoria=c,
-                        defaults={"montante": montante, "expressao": expressao},
-                    )
-                vazias = [c for c in categorias if not digitado[c.id]]
-                Valor.objects.filter(registo=registo, categoria__in=vazias).delete()
-            return redirect("patrimonio:lista")
-    else:
-        existentes = Valor.objects.filter(registo__mes=data)
-        digitado = {v.categoria_id: (v.expressao or str(v.montante)) for v in existentes}
+            ano_sel, mes_sel = data.year, data.month
+            if RegistoMensal.objects.filter(mes=data).exists():
+                erro = "Já existe um registo para este mês. Vai à tabela e carrega em Editar."
+            else:
+                try:
+                    valores = _calcular_valores(categorias, digitado)
+                except ValueError as e:
+                    erro = str(e)
+                else:
+                    with transaction.atomic():
+                        registo = RegistoMensal.objects.create(mes=data)
+                        _guardar_valores(registo, categorias, valores, digitado)
+                    return redirect("patrimonio:lista")
 
     for c in categorias:
         c.valor_atual = digitado.get(c.id, "")
@@ -89,8 +111,47 @@ def novo_registo(request):
     return render(request, "patrimonio/novo.html", {
         "categorias": categorias,
         "erro": erro,
-        "mes_txt": mes_txt,
+        "meses": MESES,
+        "anos": anos_disponiveis(),
+        "ano_sel": ano_sel,
+        "mes_sel": mes_sel,
+        "existentes": existentes,
     })
+
+
+def editar_registo(request, pk):
+    registo = get_object_or_404(RegistoMensal, pk=pk)
+    categorias = list(Categoria.objects.filter(ativa=True))
+    erro = None
+
+    if request.method == "POST":
+        digitado = _ler_digitado(request, categorias)
+        try:
+            valores = _calcular_valores(categorias, digitado)
+        except ValueError as e:
+            erro = str(e)
+        else:
+            with transaction.atomic():
+                _guardar_valores(registo, categorias, valores, digitado)
+            return redirect("patrimonio:lista")
+    else:
+        atuais = Valor.objects.filter(registo=registo)
+        digitado = {v.categoria_id: (v.expressao or str(v.montante)) for v in atuais}
+
+    for c in categorias:
+        c.valor_atual = digitado.get(c.id, "")
+
+    return render(request, "patrimonio/editar.html", {
+        "registo": registo,
+        "categorias": categorias,
+        "erro": erro,
+    })
+
+
+@require_POST
+def apagar_registo(request, pk):
+    get_object_or_404(RegistoMensal, pk=pk).delete()
+    return redirect("patrimonio:lista")
 
 
 def nova_categoria(request):
