@@ -76,10 +76,71 @@
   </div>
 </div>
 
+<div class="periodo">
+  <span>Período dos gráficos:</span>
+  <button type="button" data-n="3">3 meses</button>
+  <button type="button" data-n="6">6 meses</button>
+  <button type="button" data-n="12">12 meses</button>
+  <button type="button" data-n="0" class="ativo">Tudo</button>
+</div>
+
 <div class="graficos">
-  <div><h3>Evolução do património</h3><canvas id="g_patrimonio"></canvas></div>
-  <div><h3>Receitas vs despesas por mês</h3><canvas id="g_fluxo"></canvas></div>
-  <div><h3>Investimentos atuais por categoria</h3><canvas id="g_investimentos"></canvas></div>
+  <div id="cartao_patrimonio">
+    <div class="grafico-topo">
+      <h3>Evolução do património</h3>
+      <button type="button" class="maximizar" data-alvo="cartao_patrimonio">Maximizar</button>
+    </div>
+    <div class="series" id="series_patrimonio"></div>
+    <div class="grafico-corpo"><canvas id="g_patrimonio"></canvas></div>
+  </div>
+
+  <div id="cartao_fluxo">
+    <div class="grafico-topo">
+      <h3>Receitas vs despesas por mês</h3>
+      <button type="button" class="maximizar" data-alvo="cartao_fluxo">Maximizar</button>
+    </div>
+    <div class="series" id="series_fluxo"></div>
+    <div class="grafico-corpo"><canvas id="g_fluxo"></canvas></div>
+  </div>
+
+  <div id="cartao_investimentos" class="grafico-duplo">
+    <div class="grafico-topo">
+      <h3>Investimentos atuais por categoria</h3>
+      <button type="button" class="maximizar" data-alvo="cartao_investimentos">Maximizar</button>
+    </div>
+    <div class="duplo-corpo">
+      <div class="duplo-grafico">
+        <div class="grafico-corpo"><canvas id="g_investimentos"></canvas></div>
+      </div>
+      <div class="duplo-tabela">
+        <table>
+          <tr>
+            <th>Tipo</th><th>Valor atual</th><th>% dos investimentos</th><th>% do património</th>
+          </tr>
+          {% for c in inv_por_cat %}
+          <tr>
+            <td>{{ c.nome }}</td>
+            <td>{{ c.total|floatformat:2 }} €</td>
+            <td>{% if c.pct_inv is not None %}{{ c.pct_inv|floatformat:1 }} %{% else %}—{% endif %}</td>
+            <td>{% if c.pct_pat is not None %}{{ c.pct_pat|floatformat:1 }} %{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+          <tr class="totais">
+            <td>Total</td>
+            <td>{{ inv_total|floatformat:2 }} €</td>
+            <td>{% if inv_total %}100,0 %{% else %}—{% endif %}</td>
+            <td>{% if inv_pct_pat_total is not None %}{{ inv_pct_pat_total|floatformat:1 }} %{% else %}—{% endif %}</td>
+          </tr>
+        </table>
+        {% if base_patrimonio is not None %}
+        <small>Base do "% do património": dinheiro + emergência do último registo
+        ({{ ultimo.mes|date:"m/Y" }}) + investimentos atuais = {{ base_patrimonio|floatformat:2 }} €.</small>
+        {% else %}
+        <small>O "% do património" precisa de pelo menos um registo na página Património.</small>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 
 <h2>Médias</h2>
@@ -176,32 +237,31 @@ a valorização dos investimentos e movimentos que não estejam nos relatórios.
 
   const euros = (v) => v.toLocaleString("pt-PT", { maximumFractionDigits: 2 }) + " €";
 
-  // Opções partilhadas pelos gráficos de linhas e barras
+  // Sem legenda do Chart.js: as caixas de seleção por cima do gráfico fazem esse papel
   const opcoesEixos = {
+    maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: { labels: { usePointStyle: true, boxWidth: 8 } },
+      legend: { display: false },
       tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${euros(c.parsed.y)}` } },
     },
     scales: { y: { ticks: { callback: euros } } },
   };
 
-  // Linha: cor sólida, sem preenchimento, pontos pequenos
   const linha = (label, data, cor, extra = {}) => ({
-    label, data,
+    label, data, _todos: data,
     borderColor: cor, backgroundColor: cor,
     pointBackgroundColor: cor, pointRadius: 3,
     borderWidth: 2, tension: 0.3, ...extra,
   });
 
-  // Barra: cor sólida com cantos arredondados
   const barra = (label, data, cor) => ({
-    label, data,
+    label, data, _todos: data,
     backgroundColor: cor, borderColor: cor,
     borderRadius: 4, maxBarThickness: 36,
   });
 
-  new Chart(document.getElementById("g_patrimonio"), {
+  const graficoPatrimonio = new Chart(document.getElementById("g_patrimonio"), {
     type: "line",
     data: {
       labels: D.patrimonio.meses,
@@ -216,7 +276,7 @@ a valorização dos investimentos e movimentos que não estejam nos relatórios.
     options: opcoesEixos,
   });
 
-  new Chart(document.getElementById("g_fluxo"), {
+  const graficoFluxo = new Chart(document.getElementById("g_fluxo"), {
     type: "bar",
     data: {
       labels: D.fluxo.meses,
@@ -240,12 +300,72 @@ a valorização dos investimentos e movimentos que não estejam nos relatórios.
       }],
     },
     options: {
+      maintainAspectRatio: false,
       cutout: "65%",
       plugins: {
         legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } },
         tooltip: { callbacks: { label: (c) => `${c.label}: ${euros(c.parsed)}` } },
       },
     },
+  });
+
+  // ---------- Escolher quais as séries visíveis ----------
+  function criarSeries(grafico, idContentor) {
+    const contentor = document.getElementById(idContentor);
+    grafico.data.datasets.forEach((ds, i) => {
+      const rotulo = document.createElement("label");
+      rotulo.className = "serie";
+      rotulo.innerHTML =
+        `<input type="checkbox" checked><span class="ponto" style="background:${ds.borderColor}"></span>${ds.label}`;
+      rotulo.querySelector("input").addEventListener("change", (e) => {
+        grafico.setDatasetVisibility(i, e.target.checked);
+        grafico.update();
+      });
+      contentor.appendChild(rotulo);
+    });
+  }
+  criarSeries(graficoPatrimonio, "series_patrimonio");
+  criarSeries(graficoFluxo, "series_fluxo");
+
+  // ---------- Filtro de período ----------
+  function aplicarPeriodo(n) {
+    const pares = [[graficoPatrimonio, D.patrimonio.meses], [graficoFluxo, D.fluxo.meses]];
+    for (const [grafico, meses] of pares) {
+      const inicio = n === 0 ? 0 : Math.max(meses.length - n, 0);
+      grafico.data.labels = meses.slice(inicio);
+      grafico.data.datasets.forEach((ds) => { ds.data = ds._todos.slice(inicio); });
+      grafico.update();
+    }
+  }
+
+  document.querySelectorAll(".periodo button").forEach((botao) => {
+    botao.addEventListener("click", () => {
+      document.querySelectorAll(".periodo button").forEach((b) => b.classList.remove("ativo"));
+      botao.classList.add("ativo");
+      aplicarPeriodo(Number(botao.dataset.n));
+    });
+  });
+
+  // ---------- Maximizar (ecrã inteiro) ----------
+  document.querySelectorAll("button.maximizar").forEach((botao) => {
+    botao.addEventListener("click", () => {
+      const cartao = document.getElementById(botao.dataset.alvo);
+      if (document.fullscreenElement === cartao) {
+        document.exitFullscreen();
+      } else if (cartao.requestFullscreen) {
+        cartao.requestFullscreen();
+      }
+    });
+  });
+
+  document.addEventListener("fullscreenchange", () => {
+    const ativo = document.fullscreenElement;
+    document.querySelectorAll("button.maximizar").forEach((b) => {
+      b.textContent = ativo && ativo.id === b.dataset.alvo ? "Fechar" : "Maximizar";
+    });
+    requestAnimationFrame(() => {
+      document.querySelectorAll("canvas").forEach((c) => Chart.getChart(c)?.resize());
+    });
   });
 </script>
 {% endblock %}

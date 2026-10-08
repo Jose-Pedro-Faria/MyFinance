@@ -102,6 +102,12 @@ def home(request):
     ]
     inv_total = sum((c["total"] for c in inv_por_cat), ZERO)
 
+    base_patrimonio = (ultimo["din"] + ultimo["eme"] + inv_total) if ultimo else None
+    for c in inv_por_cat:
+        c["pct_inv"] = c["total"] / inv_total * 100 if inv_total else None
+        c["pct_pat"] = c["total"] / base_patrimonio * 100 if base_patrimonio else None
+    inv_pct_pat_total = inv_total / base_patrimonio * 100 if base_patrimonio else None
+
     # ---------- Dívidas ----------
     ativas = [d for d in Divida.objects.all() if d.meses_em_falta > 0]
     mensalidade_total = sum((d.mensalidade for d in ativas), ZERO)
@@ -179,4 +185,7 @@ def home(request):
         "cobertura_pendentes": cobertura_pendentes,
         "comparacao": comparacao,
         "dados": dados,
+        "inv_por_cat": inv_por_cat,
+        "base_patrimonio": base_patrimonio,
+        "inv_pct_pat_total": inv_pct_pat_total,
     })

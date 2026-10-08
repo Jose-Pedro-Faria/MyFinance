@@ -149,3 +149,43 @@ canvas { max-width: 100%; }
   border-color: rgba(61, 220, 151, 0.35) !important;
 }
 .card .rodape { border-top-color: var(--border) !important; }
+
+/* ---------- Seletor de período ---------- */
+.periodo {
+  display: flex; align-items: center; gap: 8px;
+  margin: 20px 0 -8px; color: var(--muted); font-size: 0.9rem;
+}
+.periodo button.ativo {
+  background: var(--accent); border-color: var(--accent);
+  color: #0b1020; font-weight: 600;
+}
+
+/* ---------- Gráficos: topo, séries, maximizar ---------- */
+.grafico-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.grafico-topo h3 { margin: 0; }
+button.maximizar { font-size: 0.8rem; padding: 3px 10px; }
+
+.series { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0 8px; }
+.serie {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--text); font-size: 0.85rem; cursor: pointer; user-select: none;
+}
+.serie .ponto { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.grafico-corpo { position: relative; height: 320px; }
+
+.grafico-duplo { grid-column: 1 / -1; }
+.duplo-corpo { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; margin-top: 10px; }
+.duplo-grafico { flex: 1 1 320px; max-width: 460px; }
+.duplo-tabela { flex: 1 1 380px; }
+.duplo-tabela table { margin: 0 0 8px; }
+
+.graficos > div:fullscreen {
+  background: var(--surface);
+  padding: 24px;
+  overflow: auto;
+}
+.graficos > div:fullscreen .grafico-corpo { height: calc(100vh - 200px); }
+.graficos > div:fullscreen .duplo-grafico { max-width: none; }
+
+.totais td { font-weight: 700; }
