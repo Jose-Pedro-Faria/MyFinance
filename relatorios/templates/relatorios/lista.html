@@ -4,13 +4,10 @@
   .sub { display: none; background: #f6f6f6; }
   #tabela.show-REC .g-REC,
   #tabela.show-ESS .g-ESS,
-  #tabela.show-NES .g-NES { display: table-cell; }
-  .contentor { overflow-x: auto; }
-  button.alt { margin-left: 6px; cursor: pointer; }
-  #tabela.show-REC .g-REC,
-  #tabela.show-ESS .g-ESS,
   #tabela.show-NES .g-NES,
   #tabela.show-INV .g-INV { display: table-cell; }
+  .contentor { overflow-x: auto; }
+  button.alt { margin-left: 6px; cursor: pointer; }
 </style>
 
 <h1>Relatórios Mensais</h1>
@@ -45,16 +42,16 @@
         <td class="sub g-{{ g.cod }}">{% if v is not None %}{{ v|floatformat:2 }} €{% else %}–{% endif %}</td>
       {% endfor %}
     {% endfor %}
-     <td {% if l.sobra < 0 %}class="erro"{% endif %}><strong>{{ l.sobra|floatformat:2 }} €</strong></td>
+    <td class="{% if l.sobra < 0 %}erro{% endif %}"><strong>{{ l.sobra|floatformat:2 }} €</strong></td>
     <td>
       <a href="{% url 'relatorios:editar' l.pk %}">Editar</a>
       <form class="inline" method="post" action="{% url 'relatorios:apagar' l.pk %}"
-            onsubmit="return confirm('Apagar o relatório de {{ l.mes|date:"m/Y" }}? Esta ação não pode ser desfeita.')">
+            data-mes="{{ l.mes|date:'m/Y' }}"
+            onsubmit="return confirm('Apagar o relatório de ' + this.dataset.mes + '? Esta ação não pode ser desfeita.')">
         {% csrf_token %}
         <button type="submit">Apagar</button>
       </form>
     </td>
-  </tr>
   </tr>
   {% empty %}
   <tr><td colspan="20">Ainda não há relatórios.</td></tr>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block conteudo %}
 <style>
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 15px 0; }
@@ -243,7 +244,7 @@ a valorização dos investimentos e movimentos que não estejam nos relatórios.
 </table>
 
 {{ dados|json_script:"dados" }}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="{% static 'js/chart.umd.js' %}"></script>
 <script>
   const D = JSON.parse(document.getElementById("dados").textContent);
 
