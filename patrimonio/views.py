@@ -7,6 +7,8 @@ from django.shortcuts import redirect, render
 from .forms import CategoriaForm
 from .models import Categoria, RegistoMensal, Valor
 
+from config.calculos import calcular
+
 
 GRUPOS = [("DIN", "Dinheiro"), ("EME", "Emergência"), ("INV", "Investimentos")]
 
@@ -46,34 +48,48 @@ def lista(request):
 
 
 def novo_registo(request):
-    categorias = Categoria.objects.filter(ativa=True)
+    categorias = list(Categoria.objects.filter(ativa=True))
     erro = None
 
+    mes_txt = request.POST.get("mes") or request.GET.get("mes") or date.today().strftime("%Y-%m")
+    try:
+        ano, mes = mes_txt.split("-")
+        data = date(int(ano), int(mes), 1)
+    except ValueError:
+        data = date.today().replace(day=1)
+        mes_txt = data.strftime("%Y-%m")
+
     if request.method == "POST":
+        digitado = {c.id: request.POST.get(f"cat_{c.id}", "").strip() for c in categorias}
         try:
-            ano, mes = request.POST["mes"].split("-")
-            data = date(int(ano), int(mes), 1)
-            valores = {}
-            for c in categorias:
-                bruto = request.POST.get(f"cat_{c.id}", "").strip().replace(",", ".")
-                if bruto:
-                    valores[c] = Decimal(bruto)
-        except (ValueError, InvalidOperation, KeyError):
-            erro = "Verifica o mês e os valores introduzidos."
+            valores = {
+                c: (calcular(digitado[c.id]), digitado[c.id])
+                for c in categorias if digitado[c.id]
+            }
+        except (ValueError, SyntaxError, InvalidOperation, ZeroDivisionError):
+            erro = "Há um valor inválido. Usa números e as operações + - * / (ex.: 1200+350)."
         else:
             with transaction.atomic():
                 registo, _ = RegistoMensal.objects.get_or_create(mes=data)
-                for c, montante in valores.items():
+                for c, (montante, expressao) in valores.items():
                     Valor.objects.update_or_create(
                         registo=registo, categoria=c,
-                        defaults={"montante": montante},
+                        defaults={"montante": montante, "expressao": expressao},
                     )
+                vazias = [c for c in categorias if not digitado[c.id]]
+                Valor.objects.filter(registo=registo, categoria__in=vazias).delete()
             return redirect("patrimonio:lista")
+    else:
+        existentes = Valor.objects.filter(registo__mes=data)
+        digitado = {v.categoria_id: (v.expressao or str(v.montante)) for v in existentes}
+
+    for c in categorias:
+        c.valor_atual = digitado.get(c.id, "")
 
     return render(request, "patrimonio/novo.html", {
         "categorias": categorias,
         "erro": erro,
-        "hoje": date.today(),
+        "mes_txt": mes_txt,
     })
 
 

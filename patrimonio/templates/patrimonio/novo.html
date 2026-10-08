@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Novo registo mensal</h1>
+<h1>Registo mensal de património</h1>
 {% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
 
 <form method="post">
   {% csrf_token %}
   <div class="campo">
     <label>Mês</label>
-    <input type="month" name="mes" value="{{ hoje|date:'Y-m' }}" required>
+    <input type="month" name="mes" value="{{ mes_txt }}" required
+           onchange="window.location='?mes=' + this.value">
   </div>
+  <p><small>Podes escrever somas em cada campo, por exemplo <code>1200+350</code>.
+  Ao mudar o mês, carregam-se os valores desse mês.</small></p>
 
   {% regroup categorias by get_grupo_display as grupos %}
   {% for g in grupos %}
@@ -16,7 +19,7 @@
     {% for c in g.list %}
     <div class="campo">
       <label>{{ c.nome }}</label>
-      <input type="text" name="cat_{{ c.id }}" placeholder="0,00">
+      <input type="text" name="cat_{{ c.id }}" value="{{ c.valor_atual }}" placeholder="0,00">
     </div>
     {% endfor %}
   {% endfor %}

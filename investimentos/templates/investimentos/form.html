@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>{% if investimento %}Editar investimento{% else %}Novo investimento{% endif %}</h1>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Guardar</button>
+  <a href="{% url 'investimentos:lista' %}">Cancelar</a>
+</form>
+
+<p><small>Dica: na categoria <strong>Caixa</strong>, usa unidades = 1 e valor unitário = o montante
+que tens em caixa nessa corretora.</small></p>
+{% endblock %}

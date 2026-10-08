@@ -7,6 +7,8 @@ from django.shortcuts import redirect, render
 from .forms import SubCategoriaForm
 from .models import Lancamento, Relatorio, SubCategoria
 
+from config.calculos import calcular
+
 TIPOS = [
     ("REC", "Receita"),
     ("ESS", "Despesas Essenciais"),
@@ -48,35 +50,51 @@ def lista(request):
 
 
 def novo_relatorio(request):
-    subcategorias = SubCategoria.objects.filter(ativa=True)
+    subcategorias = list(SubCategoria.objects.filter(ativa=True))
     grupos = _agrupar(subcategorias)
     erro = None
 
+    mes_txt = request.POST.get("mes") or request.GET.get("mes") or date.today().strftime("%Y-%m")
+    try:
+        ano, mes = mes_txt.split("-")
+        data = date(int(ano), int(mes), 1)
+    except ValueError:
+        data = date.today().replace(day=1)
+        mes_txt = data.strftime("%Y-%m")
+
     if request.method == "POST":
+        digitado = {s.id: request.POST.get(f"sub_{s.id}", "").strip() for s in subcategorias}
         try:
-            ano, mes = request.POST["mes"].split("-")
-            data = date(int(ano), int(mes), 1)
-            valores = {}
-            for s in subcategorias:
-                bruto = request.POST.get(f"sub_{s.id}", "").strip().replace(",", ".")
-                if bruto:
-                    valores[s] = Decimal(bruto)
-        except (ValueError, InvalidOperation, KeyError):
-            erro = "Verifica o mês e os valores introduzidos."
+            valores = {
+                s: (calcular(digitado[s.id]), digitado[s.id])
+                for s in subcategorias if digitado[s.id]
+            }
+        except (ValueError, SyntaxError, InvalidOperation, ZeroDivisionError):
+            erro = "Há um valor inválido. Usa números e as operações + - * / (ex.: 50+20+100)."
         else:
             with transaction.atomic():
                 relatorio, _ = Relatorio.objects.get_or_create(mes=data)
-                for s, montante in valores.items():
+                for s, (montante, expressao) in valores.items():
                     Lancamento.objects.update_or_create(
                         relatorio=relatorio, subcategoria=s,
-                        defaults={"montante": montante},
+                        defaults={"montante": montante, "expressao": expressao},
                     )
+                vazias = [s for s in subcategorias if not digitado[s.id]]
+                Lancamento.objects.filter(
+                    relatorio=relatorio, subcategoria__in=vazias
+                ).delete()
             return redirect("relatorios:lista")
+    else:
+        existentes = Lancamento.objects.filter(relatorio__mes=data)
+        digitado = {l.subcategoria_id: (l.expressao or str(l.montante)) for l in existentes}
+
+    for s in subcategorias:
+        s.valor_atual = digitado.get(s.id, "")
 
     return render(request, "relatorios/novo.html", {
         "grupos": grupos,
         "erro": erro,
-        "hoje": date.today(),
+        "mes_txt": mes_txt,
     })
 
 

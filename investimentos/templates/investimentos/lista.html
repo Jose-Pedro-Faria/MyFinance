@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Investimentos</h1>
+<p><strong>Total investido atualmente: {{ total_geral|floatformat:2 }} €</strong></p>
+
+<p><a href="{% url 'investimentos:historico' %}">Ver histórico de capturas</a></p>
+
+{% if tem_posicoes %}
+<form method="post" action="{% url 'investimentos:capturar' %}"
+      onsubmit="return confirm('Guardar uma captura de todas as posições atuais?')">
+  {% csrf_token %}
+  <input type="text" name="nota" maxlength="200" placeholder="Nota (opcional)">
+  <button type="submit">Tirar captura</button>
+</form>
+{% endif %}
+
+{% include "investimentos/_grupos.html" with editavel=True %}
+{% endblock %}

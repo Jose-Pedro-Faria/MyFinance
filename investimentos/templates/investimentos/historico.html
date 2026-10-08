@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<style>
+  .contentor { overflow-x: auto; }
+  form.inline { display: inline; }
+</style>
+
+<h1>Histórico de capturas</h1>
+<p><a href="{% url 'investimentos:lista' %}">← Voltar aos investimentos atuais</a></p>
+
+<div class="contentor">
+<table>
+  <tr>
+    <th>Data</th>
+    <th>Nota</th>
+    {% for nome in categorias %}<th>{{ nome }}</th>{% endfor %}
+    <th>Total</th>
+    <th></th>
+  </tr>
+  {% for l in linhas %}
+  <tr>
+    <td><a href="{% url 'investimentos:captura' l.captura.pk %}">{{ l.captura.data|date:"d/m/Y H:i" }}</a></td>
+    <td>{{ l.captura.nota }}</td>
+    {% for s in l.subtotais %}<td>{{ s|floatformat:2 }} €</td>{% endfor %}
+    <td><strong>{{ l.total|floatformat:2 }} €</strong></td>
+    <td>
+      <form class="inline" method="post" action="{% url 'investimentos:apagar_captura' l.captura.pk %}"
+            onsubmit="return confirm('Apagar esta captura?')">
+        {% csrf_token %}
+        <button type="submit">Apagar</button>
+      </form>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="9">Ainda não há capturas.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

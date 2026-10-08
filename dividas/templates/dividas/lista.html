@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<style>
+  .totais td { font-weight: bold; background: #f6f6f6; }
+  form.inline { display: inline; }
+  .contentor { overflow-x: auto; }
+  .liquidado td { color: #888; }
+</style>
+
+<h1>Dívidas</h1>
+<p>
+  <strong>Mensalidade total de todos os créditos: {{ mensalidade_total|floatformat:2 }} €</strong><br>
+  <strong>Valor total em dívida: {{ divida_total|floatformat:2 }} €</strong>
+</p>
+
+<a href="{% url 'dividas:novo' %}">+ Adicionar dívida</a>
+
+<div class="contentor">
+<table>
+  <tr>
+    <th>Entidade de crédito</th>
+    <th>Loja</th>
+    <th>Item creditado</th>
+    <th>Mensalidade</th>
+    <th>Meses em falta</th>
+    <th>Total em falta</th>
+    <th>Dia de pagamento</th>
+    <th></th>
+  </tr>
+  {% for d in dividas %}
+  <tr {% if d.meses_em_falta == 0 %}class="liquidado"{% endif %}>
+    <td>{{ d.entidade }}</td>
+    <td>{{ d.loja }}</td>
+    <td>{{ d.item }}</td>
+    <td>{{ d.mensalidade|floatformat:2 }} €</td>
+    <td>{{ d.meses_em_falta }}</td>
+    <td>{{ d.total_em_falta|floatformat:2 }} €</td>
+    <td>{{ d.dia_pagamento }}</td>
+    <td>
+      <a href="{% url 'dividas:editar' d.pk %}">Editar</a>
+      <form class="inline" method="post" action="{% url 'dividas:apagar' d.pk %}"
+            onsubmit="return confirm('Apagar {{ d.item|escapejs }}?')">
+        {% csrf_token %}
+        <button type="submit">Apagar</button>
+      </form>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="8">Ainda não há dívidas registadas.</td></tr>
+  {% endfor %}
+  <tr class="totais">
+    <td colspan="3">Totais</td>
+    <td>{{ mensalidade_total|floatformat:2 }} €</td>
+    <td></td>
+    <td>{{ divida_total|floatformat:2 }} €</td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+</div>
+{% endblock %}

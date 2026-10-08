@@ -1,0 +1,47 @@
+<style>
+  .subtotal td { font-weight: bold; background: #f6f6f6; }
+  form.inline { display: inline; }
+  h2 { margin-bottom: 4px; }
+</style>
+
+{% for g in grupos %}
+<h2>{{ g.nome }}</h2>
+{% if editavel %}<a href="{% url 'investimentos:novo' %}?categoria={{ g.cod }}">+ Adicionar</a>{% endif %}
+<table>
+  <tr>
+    <th>Nome</th>
+    <th>Unidades</th>
+    <th>Valor unitário</th>
+    <th>Valor total</th>
+    <th>Corretora</th>
+    {% if editavel %}<th>Atualizado</th><th></th>{% endif %}
+  </tr>
+  {% for i in g.itens %}
+  <tr>
+    <td>{{ i.nome }}</td>
+    <td>{{ i.unidades|floatformat:"-8" }}</td>
+    <td>{{ i.valor_unitario|floatformat:"-4" }} €</td>
+    <td>{{ i.valor_total|floatformat:2 }} €</td>
+    <td>{{ i.corretora }}</td>
+    {% if editavel %}
+    <td>{{ i.atualizado_em|date:"d/m/Y" }}</td>
+    <td>
+      <a href="{% url 'investimentos:editar' i.pk %}">Editar</a>
+      <form class="inline" method="post" action="{% url 'investimentos:apagar' i.pk %}"
+            onsubmit="return confirm('Apagar {{ i.nome|escapejs }}?')">
+        {% csrf_token %}
+        <button type="submit">Apagar</button>
+      </form>
+    </td>
+    {% endif %}
+  </tr>
+  {% empty %}
+  <tr><td colspan="{% if editavel %}7{% else %}5{% endif %}">Sem investimentos nesta categoria.</td></tr>
+  {% endfor %}
+  <tr class="subtotal">
+    <td colspan="3">Subtotal {{ g.nome }}</td>
+    <td>{{ g.subtotal|floatformat:2 }} €</td>
+    <td colspan="{% if editavel %}3{% else %}1{% endif %}"></td>
+  </tr>
+</table>
+{% endfor %}

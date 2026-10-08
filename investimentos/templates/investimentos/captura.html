@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Captura de {{ captura.data|date:"d/m/Y H:i" }}</h1>
+{% if captura.nota %}<p>Nota: {{ captura.nota }}</p>{% endif %}
+<p><strong>Total nesta captura: {{ total_geral|floatformat:2 }} €</strong></p>
+<p><a href="{% url 'investimentos:historico' %}">← Voltar ao histórico</a></p>
+
+{% include "investimentos/_grupos.html" with editavel=False %}
+{% endblock %}

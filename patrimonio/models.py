@@ -34,6 +34,7 @@ class Valor(models.Model):
     )
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT)
     montante = models.DecimalField(max_digits=12, decimal_places=2)
+    expressao = models.CharField(max_length=200, blank=True, default="")
 
     class Meta:
         unique_together = ("registo", "categoria")
