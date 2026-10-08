@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>{% block titulo %}MyFinance{% endblock %}</title>
+  <style>
+    body { font-family: sans-serif; max-width: 1300px; margin: 20px auto; padding: 0 10px; }
+    nav a { margin-right: 15px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    .erro { color: red; }
+    label { display: inline-block; width: 250px; }
+    .campo { margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/patrimonio/">Património</a>
+    <a href="/relatorios/">Relatórios Mensais</a>
+  </nav>
+  <hr>
+  {% block conteudo %}{% endblock %}
+</body>
+</html>

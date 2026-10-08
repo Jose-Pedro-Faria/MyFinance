@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Nova categoria</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Criar</button>
+  <a href="{% url 'patrimonio:lista' %}">Cancelar</a>
+</form>
+{% endblock %}

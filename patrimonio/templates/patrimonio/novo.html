@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Novo registo mensal</h1>
+{% if erro %}<p class="erro">{{ erro }}</p>{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <div class="campo">
+    <label>Mês</label>
+    <input type="month" name="mes" value="{{ hoje|date:'Y-m' }}" required>
+  </div>
+
+  {% regroup categorias by get_grupo_display as grupos %}
+  {% for g in grupos %}
+    <h3>{{ g.grouper }}</h3>
+    {% for c in g.list %}
+    <div class="campo">
+      <label>{{ c.nome }}</label>
+      <input type="text" name="cat_{{ c.id }}" placeholder="0,00">
+    </div>
+    {% endfor %}
+  {% endfor %}
+
+  <p><button type="submit">Guardar</button>
+  <a href="{% url 'patrimonio:lista' %}">Cancelar</a></p>
+</form>
+<p><a href="{% url 'patrimonio:nova_categoria' %}">+ Criar nova categoria</a></p>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<style>
+  .sub { display: none; background: #f6f6f6; }
+  #tabela.show-DIN .g-DIN,
+  #tabela.show-EME .g-EME,
+  #tabela.show-INV .g-INV { display: table-cell; }
+  .contentor { overflow-x: auto; }
+  button.alt { margin-left: 6px; cursor: pointer; }
+</style>
+
+<h1>Registo de Património</h1>
+<a href="{% url 'patrimonio:novo' %}">+ Novo registo mensal</a> |
+<a href="{% url 'patrimonio:nova_categoria' %}">+ Nova categoria</a>
+
+<div class="contentor">
+<table id="tabela">
+  <tr>
+    <th>Mês</th>
+    {% for g in grupos %}
+      <th>
+        {{ g.nome }}
+        {% if g.categorias %}
+        <button type="button" class="alt" onclick="alternar('{{ g.cod }}')">+/−</button>
+        {% endif %}
+      </th>
+      {% for c in g.categorias %}
+        <th class="sub g-{{ g.cod }}">{{ c.nome }}</th>
+      {% endfor %}
+    {% endfor %}
+    <th>Total</th>
+    <th>Total sem Emergência</th>
+  </tr>
+
+  {% for l in linhas %}
+  <tr>
+    <td>{{ l.mes|date:"m/Y" }}</td>
+    {% for g in l.grupos %}
+      <td>{{ g.total|floatformat:2 }} €</td>
+      {% for v in g.valores %}
+        <td class="sub g-{{ g.cod }}">{% if v is not None %}{{ v|floatformat:2 }} €{% else %}–{% endif %}</td>
+      {% endfor %}
+    {% endfor %}
+    <td><strong>{{ l.total|floatformat:2 }} €</strong></td>
+    <td><strong>{{ l.sem_emergencia|floatformat:2 }} €</strong></td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="20">Ainda não há registos.</td></tr>
+  {% endfor %}
+</table>
+</div>
+
+<script>
+  function alternar(cod) {
+    document.getElementById("tabela").classList.toggle("show-" + cod);
+  }
+</script>
+{% endblock %}
