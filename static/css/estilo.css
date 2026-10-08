@@ -1,0 +1,151 @@
+:root {
+  color-scheme: dark;
+  --bg: #0e1220;
+  --surface: #161c2e;
+  --surface-2: #1e2640;
+  --border: #2a3352;
+  --text: #e8ebf5;
+  --muted: #8f9ab5;
+  --accent: #6c8cff;
+  --accent-2: #8aa3ff;
+  --danger: #ff6b81;
+  --success: #3ddc97;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+main { max-width: 1300px; margin: 0 auto; padding: 24px 20px 60px; }
+
+h1 { font-size: 1.8rem; margin: 0 0 16px; letter-spacing: -0.02em; }
+h2 { font-size: 1.3rem; margin: 32px 0 10px; }
+h3 { font-size: 1.05rem; margin: 16px 0 8px; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-2); text-decoration: underline; }
+hr { border: 0; border-top: 1px solid var(--border); }
+small { color: var(--muted); }
+code { background: var(--surface-2); padding: 1px 6px; border-radius: 6px; }
+
+/* ---------- Menu superior ---------- */
+.topo {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(14, 18, 32, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.topo-conteudo {
+  max-width: 1300px; margin: 0 auto; padding: 10px 20px;
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+}
+.marca { font-weight: 700; font-size: 1.15rem; letter-spacing: -0.02em; }
+.topo nav { display: flex; align-items: center; gap: 4px; flex: 1; flex-wrap: wrap; }
+.topo nav a { color: var(--muted); padding: 6px 12px; border-radius: 8px; }
+.topo nav a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
+.topo nav a.ativo {
+  color: var(--text); background: var(--surface-2);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.topo form.sair { margin-left: auto; }
+
+/* ---------- Botões ---------- */
+button {
+  font: inherit; font-size: 0.9rem; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 14px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+button:hover { border-color: var(--accent); }
+
+main form:not(.inline) button[type=submit] {
+  background: var(--accent); border-color: var(--accent);
+  color: #0b1020; font-weight: 600;
+}
+main form:not(.inline) button[type=submit]:hover { background: var(--accent-2); }
+
+form.inline button {
+  color: var(--danger); background: transparent;
+  border-color: rgba(255, 107, 129, 0.4);
+  padding: 3px 10px; font-size: 0.8rem;
+}
+form.inline button:hover { background: rgba(255, 107, 129, 0.12); border-color: var(--danger); }
+
+button.alt { padding: 0 8px; font-size: 0.75rem; }
+
+/* ---------- Formulários ---------- */
+input, select, textarea {
+  font: inherit; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid rgba(108, 140, 255, 0.45); border-color: var(--accent);
+}
+input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; padding: 0; }
+::placeholder { color: var(--muted); opacity: 0.7; }
+label { color: var(--muted); }
+.campo { margin: 8px 0; }
+.campo label { display: inline-block; width: 250px; }
+form p { margin: 12px 0; }
+.helptext { color: var(--muted); font-size: 0.85rem; }
+.errorlist { list-style: none; padding: 0; margin: 4px 0; color: var(--danger); }
+.erro { color: var(--danger); }
+
+/* ---------- Tabelas ---------- */
+table {
+  width: 100%; margin: 12px 0 20px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border-collapse: separate; border-spacing: 0; overflow: hidden;
+}
+th, td {
+  padding: 10px 14px; text-align: right;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+th:first-child, td:first-child { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+th {
+  background: var(--surface-2); color: var(--muted);
+  font-size: 0.78rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+}
+tr:hover td { background: rgba(255, 255, 255, 0.03); }
+
+/* ---------- Cartões ---------- */
+.kpi, .card, .graficos > div {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.graficos h3 { margin-top: 0; }
+canvas { max-width: 100%; }
+
+/* ---------- Login ---------- */
+.login {
+  max-width: 380px; margin: 60px auto;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+}
+
+/* ---------- Sobrepõe cores claras dos <style> de cada página ---------- */
+.sub { background: rgba(108, 140, 255, 0.08) !important; }
+.subtotal td, .totais td { background: var(--surface-2) !important; }
+.neg { color: var(--danger) !important; }
+.paga, .liquidado td { color: var(--muted) !important; }
+.kpi, .card { border-color: var(--border) !important; border-radius: var(--radius) !important; }
+.kpi .titulo, .kpi .nota { color: var(--muted) !important; }
+.card.completo {
+  background: rgba(61, 220, 151, 0.08) !important;
+  border-color: rgba(61, 220, 151, 0.35) !important;
+}
+.card .rodape { border-top-color: var(--border) !important; }

@@ -1,28 +1,38 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>{% block titulo %}MyFinance{% endblock %}</title>
-  <style>
-    body { font-family: sans-serif; max-width: 1300px; margin: 20px auto; padding: 0 10px; }
-    nav a { margin-right: 15px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: right; }
-    th:first-child, td:first-child { text-align: left; }
-    .erro { color: red; }
-    label { display: inline-block; width: 250px; }
-    .campo { margin: 6px 0; }
-  </style>
+  <link rel="stylesheet" href="{% static 'css/estilo.css' %}">
 </head>
 <body>
-  <nav>
-    <a href="/patrimonio/">Património</a>
-    <a href="/relatorios/">Relatórios Mensais</a>
-    <a href="/investimentos/">Investimentos</a>
-    <a href="/dividas/">Dívidas</a>
-    <a href="/programadas/">Despesas Programadas</a>
-  </nav>
-  <hr>
-  {% block conteudo %}{% endblock %}
+  <header class="topo">
+    <div class="topo-conteudo">
+      <span class="marca">MyFinance</span>
+      {% if user.is_authenticated %}
+      {% with app=request.resolver_match.app_name %}
+      <nav>
+        <a href="/" class="{% if app == 'home' %}ativo{% endif %}">Home</a>
+        <a href="/patrimonio/" class="{% if app == 'patrimonio' %}ativo{% endif %}">Património</a>
+        <a href="/relatorios/" class="{% if app == 'relatorios' %}ativo{% endif %}">Relatórios Mensais</a>
+        <a href="/investimentos/" class="{% if app == 'investimentos' %}ativo{% endif %}">Investimentos</a>
+        <a href="/dividas/" class="{% if app == 'dividas' %}ativo{% endif %}">Dívidas</a>
+        <a href="/programadas/" class="{% if app == 'programadas' %}ativo{% endif %}">Despesas Programadas</a>
+        <form method="post" action="{% url 'logout' %}" class="sair">
+          {% csrf_token %}
+          <button type="submit">Sair</button>
+        </form>
+      </nav>
+      {% endwith %}
+      {% endif %}
+    </div>
+  </header>
+
+  <main>
+    {% block conteudo %}{% endblock %}
+  </main>
 </body>
 </html>

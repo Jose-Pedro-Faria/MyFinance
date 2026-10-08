@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<style>
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 15px 0; }
+  .kpi { border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; }
+  .kpi .titulo { font-size: .85em; color: #666; }
+  .kpi .valor { font-size: 1.5em; font-weight: bold; }
+  .kpi .nota { font-size: .8em; color: #666; }
+  .graficos { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; margin: 20px 0; }
+  .neg { color: #b00020; }
+  h2 { margin-top: 30px; }
+</style>
+
+<h1>Home</h1>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="titulo">Património total {% if ultimo %}({{ ultimo.mes|date:"m/Y" }}){% endif %}</div>
+    <div class="valor">{% if ultimo %}{{ ultimo.total|floatformat:2 }} €{% else %}—{% endif %}</div>
+    {% if variacao is not None %}
+    <div class="nota {% if variacao < 0 %}neg{% endif %}">
+      {% if variacao >= 0 %}+{% endif %}{{ variacao|floatformat:2 }} € face ao registo anterior
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Total sem Emergência</div>
+    <div class="valor">{% if ultimo %}{{ ultimo.sem_eme|floatformat:2 }} €{% else %}—{% endif %}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Investimentos (valor atual)</div>
+    <div class="valor">{{ inv_total|floatformat:2 }} €</div>
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Património líquido</div>
+    <div class="valor {% if patrimonio_liquido is not None and patrimonio_liquido < 0 %}neg{% endif %}">
+      {% if patrimonio_liquido is not None %}{{ patrimonio_liquido|floatformat:2 }} €{% else %}—{% endif %}
+    </div>
+    <div class="nota">Património total − dívida total</div>
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Dívida total</div>
+    <div class="valor">{{ divida_total|floatformat:2 }} €</div>
+    <div class="nota">Mensalidades: {{ mensalidade_total|floatformat:2 }} €/mês</div>
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Sobra do último mês {% if ultimo_rel %}({{ ultimo_rel.mes|date:"m/Y" }}){% endif %}</div>
+    <div class="valor {% if ultimo_rel and ultimo_rel.sobra < 0 %}neg{% endif %}">
+      {% if ultimo_rel %}{{ ultimo_rel.sobra|floatformat:2 }} €{% else %}—{% endif %}
+    </div>
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Fundo de emergência</div>
+    <div class="valor">{% if meses_emergencia is not None %}{{ meses_emergencia|floatformat:1 }} meses{% else %}—{% endif %}</div>
+    <div class="nota">Cobre este tempo de despesas essenciais médias</div>
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Peso das dívidas na receita</div>
+    <div class="valor">{% if taxa_esforco is not None %}{{ taxa_esforco|floatformat:1 }} %{% else %}—{% endif %}</div>
+    <div class="nota">Mensalidades ÷ receita média mensal</div>
+  </div>
+
+  <div class="kpi">
+    <div class="titulo">Despesas programadas pendentes</div>
+    <div class="valor">{{ pendentes_total|floatformat:2 }} €</div>
+    {% if cobertura_pendentes is not None %}
+    <div class="nota">≈ {{ cobertura_pendentes|floatformat:1 }} meses de sobra média</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="graficos">
+  <div><h3>Evolução do património</h3><canvas id="g_patrimonio"></canvas></div>
+  <div><h3>Receitas vs despesas por mês</h3><canvas id="g_fluxo"></canvas></div>
+  <div><h3>Investimentos atuais por categoria</h3><canvas id="g_investimentos"></canvas></div>
+</div>
+
+<h2>Médias</h2>
+<table>
+  <tr><th></th><th>Média mensal</th><th>Média anual</th></tr>
+  <tr>
+    <td>Receitas</td>
+    <td>{% if media_rec is not None %}{{ media_rec|floatformat:2 }} €{% else %}—{% endif %}</td>
+    <td>{% if media_anual_rec is not None %}{{ media_anual_rec|floatformat:2 }} €{% else %}—{% endif %}</td>
+  </tr>
+  <tr>
+    <td>Despesas (total)</td>
+    <td>{% if media_desp is not None %}{{ media_desp|floatformat:2 }} €{% else %}—{% endif %}</td>
+    <td>{% if media_anual_desp is not None %}{{ media_anual_desp|floatformat:2 }} €{% else %}—{% endif %}</td>
+  </tr>
+  <tr>
+    <td>&nbsp;&nbsp;Despesas essenciais</td>
+    <td>{% if media_ess is not None %}{{ media_ess|floatformat:2 }} €{% else %}—{% endif %}</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>&nbsp;&nbsp;Despesas não essenciais</td>
+    <td>{% if media_nes is not None %}{{ media_nes|floatformat:2 }} €{% else %}—{% endif %}</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><strong>Sobra</strong></td>
+    <td>{% if media_sobra is not None %}<strong>{{ media_sobra|floatformat:2 }} €</strong>{% else %}—{% endif %}</td>
+    <td>{% if media_anual_sobra is not None %}<strong>{{ media_anual_sobra|floatformat:2 }} €</strong>{% else %}—{% endif %}</td>
+  </tr>
+</table>
+
+<h2>Totais por ano</h2>
+<table>
+  <tr><th>Ano</th><th>Meses registados</th><th>Receitas</th><th>Despesas</th><th>Sobra</th></tr>
+  {% for a in tabela_anos %}
+  <tr>
+    <td>{{ a.ano }}</td>
+    <td>{{ a.meses }}</td>
+    <td>{{ a.rec|floatformat:2 }} €</td>
+    <td>{{ a.desp|floatformat:2 }} €</td>
+    <td class="{% if a.sobra < 0 %}neg{% endif %}">{{ a.sobra|floatformat:2 }} €</td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="5">Ainda não há relatórios mensais.</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Despesas programadas pendentes</h2>
+<table>
+  <tr><th>Mês</th><th>Valor pendente</th></tr>
+  {% for p in pendentes %}
+  <tr><td>{{ p.m|date:"F Y" }}</td><td>{{ p.t|floatformat:2 }} €</td></tr>
+  {% empty %}
+  <tr><td colspan="2">Não há despesas pendentes.</td></tr>
+  {% endfor %}
+</table>
+
+<h2>Sobra do mês vs variação do património</h2>
+<p><small>Só aparecem meses com registo de património no mês anterior. A diferença inclui, por exemplo,
+a valorização dos investimentos e movimentos que não estejam nos relatórios.</small></p>
+<table>
+  <tr><th>Mês</th><th>Sobra (relatório)</th><th>Variação do património</th><th>Diferença</th></tr>
+  {% for c in comparacao %}
+  <tr>
+    <td>{{ c.mes|date:"m/Y" }}</td>
+    <td>{{ c.sobra|floatformat:2 }} €</td>
+    <td>{{ c.variacao|floatformat:2 }} €</td>
+    <td class="{% if c.diferenca < 0 %}neg{% endif %}">{{ c.diferenca|floatformat:2 }} €</td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="4">Ainda não há meses consecutivos com património e relatório.</td></tr>
+  {% endfor %}
+</table>
+
+{{ dados|json_script:"dados" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const D = JSON.parse(document.getElementById("dados").textContent);
+
+  Chart.defaults.color = "#8f9ab5";
+  Chart.defaults.borderColor = "rgba(255, 255, 255, 0.08)";
+  Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+  Chart.defaults.elements.arc.borderColor = "#161c2e";
+
+  const COR = {
+    azul: "#6c8cff",
+    roxo: "#b78cff",
+    verde: "#3ddc97",
+    ambar: "#ffb454",
+    rosa: "#ff6b81",
+    claro: "#e8ebf5",
+  };
+
+  const euros = (v) => v.toLocaleString("pt-PT", { maximumFractionDigits: 2 }) + " €";
+
+  // Opções partilhadas pelos gráficos de linhas e barras
+  const opcoesEixos = {
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { labels: { usePointStyle: true, boxWidth: 8 } },
+      tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${euros(c.parsed.y)}` } },
+    },
+    scales: { y: { ticks: { callback: euros } } },
+  };
+
+  // Linha: cor sólida, sem preenchimento, pontos pequenos
+  const linha = (label, data, cor, extra = {}) => ({
+    label, data,
+    borderColor: cor, backgroundColor: cor,
+    pointBackgroundColor: cor, pointRadius: 3,
+    borderWidth: 2, tension: 0.3, ...extra,
+  });
+
+  // Barra: cor sólida com cantos arredondados
+  const barra = (label, data, cor) => ({
+    label, data,
+    backgroundColor: cor, borderColor: cor,
+    borderRadius: 4, maxBarThickness: 36,
+  });
+
+  new Chart(document.getElementById("g_patrimonio"), {
+    type: "line",
+    data: {
+      labels: D.patrimonio.meses,
+      datasets: [
+        linha("Total", D.patrimonio.total, COR.azul, { borderWidth: 3 }),
+        linha("Total sem Emergência", D.patrimonio.sem_eme, COR.claro, { borderDash: [6, 4] }),
+        linha("Dinheiro", D.patrimonio.din, COR.verde),
+        linha("Emergência", D.patrimonio.eme, COR.ambar),
+        linha("Investimentos", D.patrimonio.inv, COR.roxo),
+      ],
+    },
+    options: opcoesEixos,
+  });
+
+  new Chart(document.getElementById("g_fluxo"), {
+    type: "bar",
+    data: {
+      labels: D.fluxo.meses,
+      datasets: [
+        barra("Receita", D.fluxo.rec, COR.verde),
+        barra("Despesas essenciais", D.fluxo.ess, COR.ambar),
+        barra("Despesas não essenciais", D.fluxo.nes, COR.rosa),
+        linha("Sobra", D.fluxo.sobra, COR.azul, { type: "line", borderWidth: 3 }),
+      ],
+    },
+    options: opcoesEixos,
+  });
+
+  new Chart(document.getElementById("g_investimentos"), {
+    type: "doughnut",
+    data: {
+      labels: D.investimentos.nomes,
+      datasets: [{
+        data: D.investimentos.valores,
+        backgroundColor: [COR.azul, COR.roxo, COR.verde, COR.ambar, COR.rosa],
+      }],
+    },
+    options: {
+      cutout: "65%",
+      plugins: {
+        legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } },
+        tooltip: { callbacks: { label: (c) => `${c.label}: ${euros(c.parsed)}` } },
+      },
+    },
+  });
+</script>
+{% endblock %}
