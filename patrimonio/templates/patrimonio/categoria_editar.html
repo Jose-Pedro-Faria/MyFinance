@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Renomear categoria</h1>
+<p>Grupo: <strong>{{ categoria.get_grupo_display }}</strong>
+<small>(o grupo não se pode alterar, para não mudar os totais do histórico)</small></p>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Guardar</button>
+  <a href="{% url 'patrimonio:categorias' %}">Cancelar</a>
+</form>
+{% endblock %}

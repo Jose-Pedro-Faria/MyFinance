@@ -11,7 +11,8 @@
 
 <h1>Registo de Património</h1>
 <a href="{% url 'patrimonio:novo' %}">+ Novo registo mensal</a> |
-<a href="{% url 'patrimonio:nova_categoria' %}">+ Nova categoria</a>
+<a href="{% url 'patrimonio:nova_categoria' %}">+ Nova categoria</a> |
+<a href="{% url 'patrimonio:categorias' %}">Gerir categorias</a>
 
 <div class="contentor">
 <table id="tabela">
@@ -25,7 +26,7 @@
         {% endif %}
       </th>
       {% for c in g.categorias %}
-        <th class="sub g-{{ g.cod }}">{{ c.nome }}</th>
+        <th class="sub g-{{ g.cod }}">{{ c.nome }}{% if not c.ativa %} <small>(inativa)</small>{% endif %}</th>
       {% endfor %}
     {% endfor %}
     <th>Total</th>

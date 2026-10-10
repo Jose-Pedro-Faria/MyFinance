@@ -10,6 +10,10 @@ from config.datas import MESES, anos_disponiveis, ler_mes
 
 from .forms import CategoriaForm
 from .models import Categoria, RegistoMensal, Valor
+from django.db.models import Count, Q
+
+from .forms import CategoriaForm, CategoriaNomeForm
+
 
 GRUPOS = [("DIN", "Dinheiro"), ("EME", "Emergência"), ("INV", "Investimentos")]
 
@@ -121,7 +125,8 @@ def novo_registo(request):
 
 def editar_registo(request, pk):
     registo = get_object_or_404(RegistoMensal, pk=pk)
-    categorias = list(Categoria.objects.filter(ativa=True))
+    com_valor = Valor.objects.filter(registo=registo).values_list("categoria_id", flat=True)
+    categorias = list(Categoria.objects.filter(Q(ativa=True) | Q(id__in=com_valor)))
     erro = None
 
     if request.method == "POST":
@@ -160,3 +165,39 @@ def nova_categoria(request):
         form.save()
         return redirect("patrimonio:novo")
     return render(request, "patrimonio/categoria.html", {"form": form})
+
+def categorias(request):
+    todas = Categoria.objects.annotate(n_valores=Count("valor")).order_by("grupo", "-ativa", "nome")
+    grupos = [
+        {"nome": nome, "categorias": [c for c in todas if c.grupo == cod]}
+        for cod, nome in GRUPOS
+    ]
+    return render(request, "patrimonio/categorias.html", {"grupos": grupos})
+
+
+@require_POST
+def alternar_categoria(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    categoria.ativa = not categoria.ativa
+    categoria.save(update_fields=["ativa"])
+    return redirect("patrimonio:categorias")
+
+
+def editar_categoria(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    form = CategoriaNomeForm(request.POST or None, instance=categoria)
+    if form.is_valid():
+        form.save()
+        return redirect("patrimonio:categorias")
+    return render(request, "patrimonio/categoria_editar.html", {
+        "form": form,
+        "categoria": categoria,
+    })
+
+
+@require_POST
+def apagar_categoria(request, pk):
+    categoria = get_object_or_404(Categoria, pk=pk)
+    if not Valor.objects.filter(categoria=categoria).exists():
+        categoria.delete()
+    return redirect("patrimonio:categorias")

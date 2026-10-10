@@ -195,3 +195,6 @@ button.maximizar { font-size: 0.8rem; padding: 3px 10px; }
 
 form.inline { display: inline; }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+form.inline button.neutro { color: var(--text); background: var(--surface-2); border-color: var(--border); }
+form.inline button.neutro:hover { border-color: var(--accent); background: var(--surface-2); }

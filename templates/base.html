@@ -21,6 +21,7 @@
         <a href="/investimentos/" class="{% if app == 'investimentos' %}ativo{% endif %}">Investimentos</a>
         <a href="/dividas/" class="{% if app == 'dividas' %}ativo{% endif %}">Dívidas</a>
         <a href="/programadas/" class="{% if app == 'programadas' %}ativo{% endif %}">Despesas Programadas</a>
+        
         <form method="post" action="{% url 'logout' %}" class="sair">
           {% csrf_token %}
           <button type="submit">Sair</button>

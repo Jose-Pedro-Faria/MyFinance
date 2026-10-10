@@ -5,7 +5,7 @@
   <h3>{{ g.grouper }}</h3>
   {% for c in g.list %}
   <div class="campo">
-    <label>{{ c.nome }}</label>
+        <label>{{ c.nome }}{% if not c.ativa %} (inativa){% endif %}</label>
     <input type="text" name="cat_{{ c.id }}" value="{{ c.valor_atual }}" placeholder="0,00">
   </div>
   {% endfor %}
