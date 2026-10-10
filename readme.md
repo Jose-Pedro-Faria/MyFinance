@@ -6,6 +6,7 @@ Foi pensada para **uso individual** (um único utilizador), a correr no próprio
 
 ## Índice
 
+- [Guia rápido para quem quer experimentar](#guia-rápido-para-quem-quer-experimentar)
 - [Funcionalidades](#funcionalidades)
 - [Como são feitos os cálculos](#como-são-feitos-os-cálculos)
 - [Tecnologias](#tecnologias)
@@ -19,6 +20,49 @@ Foi pensada para **uso individual** (um único utilizador), a correr no próprio
 - [Resolução de problemas](#resolução-de-problemas)
 - [Desenvolvimento](#desenvolvimento)
 - [Licença](#licença)
+
+---
+
+## Guia rápido para quem quer experimentar
+
+Cada pessoa corre a **sua própria cópia** da app: os dados ficam no teu computador, numa base de dados tua, e **não são partilhados** com ninguém (nem com quem criou o projeto). O repositório só contém código.
+
+1. Instala o [Docker Desktop](https://www.docker.com/products/docker-desktop/) e deixa-o aberto.
+2. Descarrega o projeto: `git clone <url-do-repositorio>` e entra na pasta (ou, no GitHub, **Code → Download ZIP**).
+3. Cria o teu ficheiro `.env` a partir do modelo:
+
+   ```powershell
+   copy .env.example .env
+   ```
+
+   Abre o `.env` e troca o valor de `SECRET_KEY` por uma chave tua. Podes gerá-la sem instalar Python:
+
+   ```powershell
+   docker run --rm python:3.14-slim python -c "import secrets; print(secrets.token_urlsafe(50))"
+   ```
+
+4. Constrói e arranca:
+
+   ```powershell
+   docker compose up -d --build
+   ```
+
+5. Cria o teu utilizador (escolhe tu o nome e a palavra-passe):
+
+   ```powershell
+   docker compose exec web python manage.py createsuperuser
+   ```
+
+6. Abre `http://127.0.0.1:8000` e entra.
+
+A app começa **vazia**. Por onde começar:
+
+1. **Património:** cria as tuas categorias (contas, poupança, fundo de emergência, corretoras) e regista o primeiro mês.
+2. **Relatórios Mensais:** cria as subcategorias de receitas e despesas e regista o mês.
+3. **Investimentos, Dívidas e Despesas Programadas:** acrescenta o que tiveres.
+4. **Home:** os gráficos e as médias aparecem sozinhos à medida que registas dados.
+
+Não abras a porta da app à internet sem leres a secção [Segurança](#segurança).
 
 ---
 
@@ -152,6 +196,7 @@ MyFinance/
 ├── docker-compose.yml
 ├── .dockerignore
 ├── .gitignore
+├── .env.example             # Modelo do .env (sem segredos)
 └── .env                     # Segredos (NÃO vai para o Git)
 ```
 
@@ -341,6 +386,8 @@ Além dos passos anteriores:
 - A app foi pensada para um único utilizador: **todos os utilizadores veem os mesmos dados** (os modelos não têm "dono"). Quem precisar de dados separados deve usar uma instalação (e base de dados) por pessoa.
 - **Nunca** enviar para o Git: `.env`, `db.sqlite3` e a pasta `backups/` (já estão no `.gitignore`).
 - Gerar uma `SECRET_KEY` própria para cada instalação.
+- O repositório é público, mas **só contém código**: os dados de cada pessoa ficam na sua própria base de dados (`db.sqlite3` ou o volume do Docker), que nunca vai para o Git. Quem fizer fork ou contribuir deve manter o `.env`, o `db.sqlite3` e a pasta `backups/` fora dos commits (o `.gitignore` já os protege; confirma com `git status` antes de cada `git commit`).
+- Não abras a porta 8000 diretamente à internet. Para acesso remoto, usa um proxy com HTTPS (ver [Mudar para outro PC ou servidor](#mudar-para-outro-pc-ou-servidor)).
 - As operações de apagar usam `POST` com confirmação.
 
 ---
