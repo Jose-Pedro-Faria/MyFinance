@@ -1,7 +1,9 @@
-.venv/
-db.sqlite3
-__pycache__/
+.venv
+.git
+.vscode
+__pycache__
 *.pyc
-backups/
-staticfiles/
+db.sqlite3
+backups
+staticfiles
 .env
