@@ -341,7 +341,6 @@ Além dos passos anteriores:
 - A app foi pensada para um único utilizador: **todos os utilizadores veem os mesmos dados** (os modelos não têm "dono"). Quem precisar de dados separados deve usar uma instalação (e base de dados) por pessoa.
 - **Nunca** enviar para o Git: `.env`, `db.sqlite3` e a pasta `backups/` (já estão no `.gitignore`).
 - Gerar uma `SECRET_KEY` própria para cada instalação.
-- Se publicares o código no GitHub, usa um repositório privado.
 - As operações de apagar usam `POST` com confirmação.
 
 ---
