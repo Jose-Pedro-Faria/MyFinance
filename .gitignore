@@ -1,9 +1,21 @@
-.venv
-.git
-.vscode
-__pycache__
-*.pyc
-db.sqlite3
-backups
-staticfiles
+# Ambiente virtual e caches do Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Dados e segredos (NUNCA enviar para o Git)
 .env
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+backups/
+
+# Ficheiros gerados
+staticfiles/
+
+# Editor / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
